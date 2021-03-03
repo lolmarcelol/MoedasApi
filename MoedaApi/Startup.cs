@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MoedaApi.Routine;
 
 namespace MoedaApi
 {
@@ -27,6 +28,7 @@ namespace MoedaApi
         {
             services.AddControllers();
             services.AddMemoryCache();
+            services.AddHostedService<CotacaoRoutine>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
