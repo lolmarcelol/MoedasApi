@@ -366,3 +366,7 @@ MigrationBackup/
 
 # teste de ambiente para aws
 /AmaAPI/site
+/MoedaApi/csv/Resultado_20210303_214404.csv
+/MoedaApi/csv/Resultado_20210303_214304.csv
+/MoedaApi/csv/._Resultado_20210303_214404.csv
+/MoedaApi/csv/._Resultado_20210303_214304.csv

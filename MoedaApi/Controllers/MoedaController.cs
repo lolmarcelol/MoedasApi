@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using MoedaApi.DTO;
 using Newtonsoft.Json;
@@ -14,28 +15,17 @@ namespace MoedaApi.Controllers
     public class MoedaController : ControllerBase
     {
         private readonly ILogger<MoedaController> _logger;
-        private List<MoedaDTO> _fila;
         readonly IMemoryCache _cache;
+        readonly IStringLocalizer<MoedaController> _localizer;
 
-        public MoedaController(ILogger<MoedaController> logger, IMemoryCache memoryCache)
+        public MoedaController(ILogger<MoedaController> logger, IMemoryCache memoryCache, IStringLocalizer<MoedaController> localizer)
         {
             _logger = logger;
             _cache = memoryCache;
-            _fila = new List<MoedaDTO>();
+            _localizer = localizer;
         }
 
-        private string GetLastItemInserted()
-        {
-            string json;
-            int count = 0;
-            while (_cache.TryGetValue(count.ToString(), out json))
-            {
-                count++;
-            }
-            return json;
-        }
-
-        private int GetLastKeyInserted()
+        internal int GetLastKeyInserted()
         {
             string json;
             int count = 0;
@@ -56,8 +46,7 @@ namespace MoedaApi.Controllers
             .SetSlidingExpiration(TimeSpan.FromDays(300));
             // Save data in cache.
             _cache.Set(lastkeyInserted.ToString(), JsonConvert.SerializeObject(_dto), cacheEntryOptions);
-            _fila.AddRange(_dto);
-            return Ok(_fila);
+            return Ok(_dto);
         }
 
         [HttpGet]
@@ -75,7 +64,7 @@ namespace MoedaApi.Controllers
             }
             else
             {
-                return Unauthorized(new { msg = "erro" });
+                return Unauthorized(new { msg = _localizer["erroCache"].Value });
             }
 
         }

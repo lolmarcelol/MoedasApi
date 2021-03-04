@@ -22,8 +22,8 @@ namespace MoedaApi.Routine
         private List<DadosMoedaDTO> _listMoedas;
         private List<DadosCotacaoDTO> _listCotacoes;
         string _rootDirectory;
-        CancellationToken stopToken;
 
+        // set rootDirectory and get ILogger with DIP
         public CotacaoRoutine(ILogger<CotacaoRoutine> logger)
         {
             _logger = logger;
@@ -31,7 +31,7 @@ namespace MoedaApi.Routine
                 System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)))).Split(@"file:\")[1];
         }
 
-
+        // internal function to get information from DadosMoeda.csv and load in memory
         internal Task<List<DadosMoedaDTO>> readListMoedas(CancellationToken stoppingToken)
         {
             return Task.Run(() =>
@@ -61,6 +61,7 @@ namespace MoedaApi.Routine
             }, stoppingToken);
         }
 
+        // internal function to get information from DadosCotacao.csv and load in memory
         internal Task<List<DadosCotacaoDTO>> readListCotacoes(CancellationToken cancellationToken)
         {
             return Task.Run(() =>
@@ -93,17 +94,18 @@ namespace MoedaApi.Routine
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            // execute tasks only one time, for performance porposes
+            // execute tasks only one time, for performance purposes
             var task1 = readListCotacoes(stoppingToken);
             var task2 = readListMoedas(stoppingToken);
-            
+            // wait for all tasks to end
             Task.WhenAll(task1,task2);
+            // get results
             _listCotacoes = task1.Result;
             _listMoedas = task2.Result;
             _logger.LogInformation("Iniciando serviço de gerar csv");
+            // schedule every 2 minutes 
             _timer = new Timer(DoWork, null, TimeSpan.Zero,
-                TimeSpan.FromMinutes(1));
-
+                TimeSpan.FromMinutes(2));
             return Task.CompletedTask;
         }
 
@@ -112,8 +114,10 @@ namespace MoedaApi.Routine
             _logger.LogInformation(
                 "Executando serviço de gerar csv em: " + DateTime.Now.ToString());
             DateTime iniTime = DateTime.Now;
-            string filePath = _rootDirectory + @"\csv\teste.csv";
+            string fileName = "Resultado_"+DateTime.Now.ToString("yyyyMMdd_HHmmss")+".csv";
+            string filePath = _rootDirectory + @"\csv\"+fileName;
             List<MoedaDTO> moedas = new List<MoedaDTO>();
+            // try to do getItemFila by request in the api
             try
             {
                 using (var httpClient = new HttpClient())
@@ -135,6 +139,7 @@ namespace MoedaApi.Routine
                 "Timeout no request em : " + DateTime.Now.ToString());
             }
             
+            // logic to get the info from the in memory lists using LINQ
             Auxiliar aux = new Auxiliar();
             StringBuilder sb = new StringBuilder();
             string header = "ID_MOEDA,DATA_REF,VLR_COTACAO";
@@ -143,7 +148,6 @@ namespace MoedaApi.Routine
             foreach (var moeda in moedas)
             {
                 var a = aux.dicionario[moeda.Moeda];
-                //var cotacoes = _listCotacoes.Where(x => x.Cod_cotacao == aux.dicionario[moeda.Moeda] && (x.Data_cotacao.Date >= moeda.Data_inicio.Date && x.Data_cotacao.Date <= moeda.Data_fim.Date));
                 var moedasResult = _listMoedas.Where(x => x.Id_Moeda == moeda.Moeda && (x.Data.Date >= moeda.Data_inicio.Date && x.Data.Date <= moeda.Data_fim.Date));
 
                 foreach (var item in moedasResult)
